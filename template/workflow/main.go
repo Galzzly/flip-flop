@@ -69,6 +69,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error loading config: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Fprintf(os.Stderr, "[DEBUG] Config loaded - PHPSESSID length: %d\n", len(strings.TrimSpace(cfg.PHPSESSID)))
 
 	years, err := getYears(root)
 	if err != nil {
@@ -88,6 +89,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error building summary for %d: %v\n", year, err)
 			os.Exit(1)
 		}
+		fmt.Fprintf(os.Stderr, "[DEBUG] Year %d: Score=%d, Total=%d, Puzzles=%d\n", year, yearSummary.Score, yearSummary.Total, len(yearSummary.Puzzles))
 
 		yearPath := filepath.Join(root, fmt.Sprintf("%d", year), "README.md")
 		if err := updateReadme(yearPath, yearSummary); err != nil {
@@ -321,7 +323,9 @@ func getAvailableParts(year, puzzleID int, token string) ([]int, error) {
 		return nil, fmt.Errorf("parse puzzle HTML: %w", err)
 	}
 
-	return extractAvailableParts(doc), nil
+	parts := extractAvailableParts(doc)
+	fmt.Fprintf(os.Stderr, "[DEBUG] Year %d Puzzle %d: found parts %v\n", year, puzzleID, parts)
+	return parts, nil
 }
 
 func extractAvailableParts(n *html.Node) []int {
