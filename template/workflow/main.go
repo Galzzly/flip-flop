@@ -214,8 +214,12 @@ func fetchScore(year int, token string) (int, int, error) {
 	if err != nil {
 		return 0, 0, fmt.Errorf("build request: %w", err)
 	}
+	fmt.Fprintf(os.Stderr, "[DEBUG] Token to send: '%s' (trimmed length: %d)\n", strings.TrimSpace(token), len(strings.TrimSpace(token)))
 	if strings.TrimSpace(token) != "" {
 		req.AddCookie(&http.Cookie{Name: "PHPSESSID", Value: strings.TrimSpace(token)})
+		fmt.Fprintf(os.Stderr, "[DEBUG] Cookie added to request\n")
+	} else {
+		fmt.Fprintf(os.Stderr, "[DEBUG] WARNING: Token is empty or whitespace only\n")
 	}
 
 	resp, err := http.DefaultClient.Do(req)
