@@ -242,6 +242,7 @@ func fetchScore(year int, token string) (int, int, error) {
 	if len(mScore) != 2 {
 		return 0, 0, fmt.Errorf("score not found; are you logged in?")
 	}
+	fmt.Fprintf(os.Stderr, "[DEBUG] Score value extracted: %s\n", mScore[1])
 	score, err := strconv.Atoi(mScore[1])
 	if err != nil {
 		return 0, 0, fmt.Errorf("parse score: %w", err)
@@ -348,6 +349,7 @@ func extractAvailableParts(n *html.Node) []int {
 		list = append(list, part)
 	}
 	sort.Ints(list)
+	fmt.Fprintf(os.Stderr, "[DEBUG] Parts map after collection: %v (map size: %d)\n", list, len(parts))
 	return list
 }
 
