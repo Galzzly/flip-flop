@@ -235,6 +235,10 @@ func fetchScore(year int, token string) (int, int, error) {
 
 	text := string(body)
 	mScore := scoreRe.FindStringSubmatch(text)
+	fmt.Fprintf(os.Stderr, "[DEBUG] Score regex match: %v (pattern: %s)\n", len(mScore), scoreRe.String())
+	if len(mScore) == 0 {
+		fmt.Fprintf(os.Stderr, "[DEBUG] Response body sample (first 1000 chars): %s\n", text[:min(1000, len(text))])
+	}
 	if len(mScore) != 2 {
 		return 0, 0, fmt.Errorf("score not found; are you logged in?")
 	}
@@ -250,6 +254,13 @@ func fetchScore(year int, token string) (int, int, error) {
 	}
 
 	return score, total, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func collectPointers(year int, token, yearDir string) ([]PuzzlePointers, error) {
@@ -343,11 +354,15 @@ func extractAvailableParts(n *html.Node) []int {
 func collectParts(n *html.Node, parts map[int]struct{}) {
 	if n.Type == html.ElementNode && n.Data == "h3" {
 		for _, attr := range n.Attr {
+			if attr.Key == "id" {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Found h3 with id: %s\n", attr.Val)
+			}
 			if attr.Key == "id" && strings.HasPrefix(attr.Val, "part-") {
 				value := strings.TrimPrefix(attr.Val, "part-")
 				if part, err := strconv.Atoi(value); err == nil {
 					// part-0 is prologue, skip it. part-1, part-2, part-3 map directly to parts 1, 2, 3
 					if part > 0 {
+						fmt.Fprintf(os.Stderr, "[DEBUG] Adding part %d to map\n", part)
 						parts[part] = struct{}{}
 					}
 				}
