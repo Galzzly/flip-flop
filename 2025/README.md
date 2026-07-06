@@ -5,7 +5,7 @@
 
 ### Pointers
 
-Pointers (2025): 0/21
+Pointers (2025): 2/21
 
 | Puzzle | Part 1 | Part 2 | Part 3 |
 | --- | --- | --- | --- |
