@@ -26,6 +26,7 @@ type YearSummary struct {
 	Year    int
 	Score   int
 	Total   int
+	Bench   []BenchResult
 	Puzzles []PuzzlePointers
 }
 
@@ -37,24 +38,23 @@ type PuzzlePointers struct {
 }
 
 type BenchResult struct {
-	PuzzleID int
-	Part1    string
-	Part2    string
-	Part3    string
+	PuzzleID int    `json:"puzzle"`
+	Part1    string `json:"part1"`
+	Part2    string `json:"part2"`
+	Part3    string `json:"part3"`
 }
 
 const (
 	baseURL     = "https://flipflop.slome.org"
 	configFile  = "goff.config.json"
+	benchFile   = "benchmarks.json"
 	readmeStart = "<!-- GOFF:POINTERS:START -->"
 	readmeEnd   = "<!-- GOFF:POINTERS:END -->"
 )
 
 var (
-	scoreRe     = regexp.MustCompile(`const score = ([0-9]+);`)
-	totalRe     = regexp.MustCompile(`completed <span class="score">\?</span>/([0-9]+) parts`)
-	benchLineRe = regexp.MustCompile(`^BenchmarkSolve/part([1-3])-[0-9]+\s+\d+\s+([0-9.]+)\s+(ns/op)$`)
-	repoSlugRe  = regexp.MustCompile(`github\\.com[:/]+([^/]+)/([^/.]+)`)
+	scoreRe = regexp.MustCompile(`const score = ([0-9]+);`)
+	totalRe = regexp.MustCompile(`completed <span class="score">\?</span>/([0-9]+) parts`)
 )
 
 func main() {
@@ -69,7 +69,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error loading config: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "[DEBUG] Config loaded - PHPSESSID length: %d\n", len(strings.TrimSpace(cfg.PHPSESSID)))
 
 	years, err := getYears(root)
 	if err != nil {
@@ -89,7 +88,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error building summary for %d: %v\n", year, err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "[DEBUG] Year %d: Score=%d, Total=%d, Puzzles=%d\n", year, yearSummary.Score, yearSummary.Total, len(yearSummary.Puzzles))
 
 		yearPath := filepath.Join(root, fmt.Sprintf("%d", year), "README.md")
 		if err := updateReadme(yearPath, yearSummary); err != nil {
@@ -190,7 +188,7 @@ func getYears(root string) ([]int, error) {
 }
 
 func buildSummary(year int, token, root string) (YearSummary, error) {
-	score, total, err := fetchScore(year, token)
+	_, total, err := fetchScore(year, token)
 	if err != nil {
 		return YearSummary{}, err
 	}
@@ -201,7 +199,54 @@ func buildSummary(year int, token, root string) (YearSummary, error) {
 		return YearSummary{}, err
 	}
 
-	return YearSummary{Year: year, Score: score, Total: total, Puzzles: puzzles}, nil
+	benchResults, err := loadBench(yearDir)
+	if err != nil {
+		return YearSummary{}, err
+	}
+
+	// Calculate score by counting completed parts
+	score := calculateScore(puzzles)
+
+	return YearSummary{Year: year, Score: score, Total: total, Bench: benchResults, Puzzles: puzzles}, nil
+}
+
+// loadBench reads the committed benchmark results file for a year directory.
+// The file is produced by `goff bench`; a missing file yields no results.
+func loadBench(yearDir string) ([]BenchResult, error) {
+	data, err := os.ReadFile(filepath.Join(yearDir, benchFile))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read benchmarks: %w", err)
+	}
+
+	var results []BenchResult
+	if err := json.Unmarshal(data, &results); err != nil {
+		return nil, fmt.Errorf("parse benchmarks: %w", err)
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].PuzzleID < results[j].PuzzleID
+	})
+
+	return results, nil
+}
+
+func calculateScore(puzzles []PuzzlePointers) int {
+	score := 0
+	for _, puzzle := range puzzles {
+		if puzzle.Part1 {
+			score++
+		}
+		if puzzle.Part2 {
+			score++
+		}
+		if puzzle.Part3 {
+			score++
+		}
+	}
+	return score
 }
 
 func fetchScore(year int, token string) (int, int, error) {
@@ -214,12 +259,8 @@ func fetchScore(year int, token string) (int, int, error) {
 	if err != nil {
 		return 0, 0, fmt.Errorf("build request: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "[DEBUG] Token to send: '%s' (trimmed length: %d)\n", strings.TrimSpace(token), len(strings.TrimSpace(token)))
 	if strings.TrimSpace(token) != "" {
 		req.AddCookie(&http.Cookie{Name: "PHPSESSID", Value: strings.TrimSpace(token)})
-		fmt.Fprintf(os.Stderr, "[DEBUG] Cookie added to request\n")
-	} else {
-		fmt.Fprintf(os.Stderr, "[DEBUG] WARNING: Token is empty or whitespace only\n")
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -239,14 +280,9 @@ func fetchScore(year int, token string) (int, int, error) {
 
 	text := string(body)
 	mScore := scoreRe.FindStringSubmatch(text)
-	fmt.Fprintf(os.Stderr, "[DEBUG] Score regex match: %v (pattern: %s)\n", len(mScore), scoreRe.String())
-	if len(mScore) == 0 {
-		fmt.Fprintf(os.Stderr, "[DEBUG] Response body sample (first 1000 chars): %s\n", text[:min(1000, len(text))])
-	}
 	if len(mScore) != 2 {
 		return 0, 0, fmt.Errorf("score not found; are you logged in?")
 	}
-	fmt.Fprintf(os.Stderr, "[DEBUG] Score value extracted: %s\n", mScore[1])
 	score, err := strconv.Atoi(mScore[1])
 	if err != nil {
 		return 0, 0, fmt.Errorf("parse score: %w", err)
@@ -259,13 +295,6 @@ func fetchScore(year int, token string) (int, int, error) {
 	}
 
 	return score, total, nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func collectPointers(year int, token, yearDir string) ([]PuzzlePointers, error) {
@@ -339,9 +368,7 @@ func getAvailableParts(year, puzzleID int, token string) ([]int, error) {
 		return nil, fmt.Errorf("parse puzzle HTML: %w", err)
 	}
 
-	parts := extractAvailableParts(doc)
-	fmt.Fprintf(os.Stderr, "[DEBUG] Year %d Puzzle %d: found parts %v\n", year, puzzleID, parts)
-	return parts, nil
+	return extractAvailableParts(doc), nil
 }
 
 func extractAvailableParts(n *html.Node) []int {
@@ -353,22 +380,17 @@ func extractAvailableParts(n *html.Node) []int {
 		list = append(list, part)
 	}
 	sort.Ints(list)
-	fmt.Fprintf(os.Stderr, "[DEBUG] Parts map after collection: %v (map size: %d)\n", list, len(parts))
 	return list
 }
 
 func collectParts(n *html.Node, parts map[int]struct{}) {
 	if n.Type == html.ElementNode && n.Data == "h3" {
 		for _, attr := range n.Attr {
-			if attr.Key == "id" {
-				fmt.Fprintf(os.Stderr, "[DEBUG] Found h3 with id: %s\n", attr.Val)
-			}
 			if attr.Key == "id" && strings.HasPrefix(attr.Val, "part-") {
 				value := strings.TrimPrefix(attr.Val, "part-")
 				if part, err := strconv.Atoi(value); err == nil {
 					// part-0 is prologue, skip it. part-1, part-2, part-3 map directly to parts 1, 2, 3
 					if part > 0 {
-						fmt.Fprintf(os.Stderr, "[DEBUG] Adding part %d to map\n", part)
 						parts[part] = struct{}{}
 					}
 				}
@@ -447,9 +469,23 @@ func formatSummary(summary YearSummary) string {
 	}
 
 	lines = append(lines, "", "### Benchmarks", "")
-	lines = append(lines, "No benchmarks yet.")
+	if len(summary.Bench) == 0 {
+		lines = append(lines, "No benchmarks yet.")
+	} else {
+		lines = append(lines, "| Puzzle | Part 1 | Part 2 | Part 3 |", "| --- | --- | --- | --- |")
+		for _, row := range summary.Bench {
+			lines = append(lines, fmt.Sprintf("| %02d | %s | %s | %s |", row.PuzzleID, defaultBench(row.Part1), defaultBench(row.Part2), defaultBench(row.Part3)))
+		}
+	}
 
 	return strings.Join(lines, "\n")
+}
+
+func defaultBench(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "-"
+	}
+	return value
 }
 
 func formatPointerTable(puzzles []PuzzlePointers) string {
