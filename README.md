@@ -139,13 +139,17 @@ After setup, your repository will contain:
 
 ### Pointers
 
-Pointers (2026): 0/36
+Pointers (2026): 3/36
 
 | Puzzle | Part 1 | Part 2 | Part 3 |
 | --- | --- | --- | --- |
-| 01 | 🩴 | - | - |
+| 01 | 🩴 | 🩴 | 🩴 |
 
 ### Benchmarks
 
-No benchmarks yet.
+| Puzzle | Part 1 | Part 2 | Part 3 |
+| --- | --- | --- | --- |
+| 01 | 2.46 μs | 2.44 μs | 2.88 μs |
+
+Other years: 2025:9/21
 <!-- GOFF:POINTERS:END -->
