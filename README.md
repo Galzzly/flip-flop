@@ -135,16 +135,15 @@ After setup, your repository will contain:
 <!-- GOFF:POINTERS:START -->
 # Flip Flop
 
-## Year : 2025
+## Year : 2026
 
 ### Pointers
 
-Pointers (2025): 0/21
+Pointers (2026): 0/36
 
 | Puzzle | Part 1 | Part 2 | Part 3 |
 | --- | --- | --- | --- |
 | 01 | 🩴 | - | - |
-| 02 | 🩴 | - | - |
 
 ### Benchmarks
 
