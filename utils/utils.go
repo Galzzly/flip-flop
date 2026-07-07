@@ -29,3 +29,31 @@ func DiffNum[T Number](a, b T) (res T) {
 	}
 	return
 }
+
+func IntPow(n, m int) int {
+	if m == 0 {
+		return 1
+	}
+	if n == 0 {
+		return 0
+	}
+	if m == 1 {
+		return n
+	}
+	result := n
+	for i := 2; i <= m; i++ {
+		result *= n
+	}
+	return result
+}
+
+func Ter[T any](cond bool, a, b T) T {
+	if cond {
+		return a
+	}
+	return b
+}
+
+func Biggest[T Number](a, b T) T {
+	return Ter(a < b, b, a)
+}
