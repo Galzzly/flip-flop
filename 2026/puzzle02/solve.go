@@ -6,15 +6,9 @@ func Part1(input string) any {
 	for _, v := range input {
 		switch v {
 		case '>':
-			R++
-			if R == len(wall) {
-				R = 0
-			}
+			R = (R + 1) % len(wall)
 		case '<':
-			R--
-			if R < 0 {
-				R = len(wall) - 1
-			}
+			R = (R - 1 + len(wall)) % len(wall)
 		}
 		wall[R]++
 	}
@@ -69,22 +63,13 @@ func Part3(input string) any {
 	for i, v := range input {
 		switch v {
 		case '>':
-			R++
-			if R == len(wall) {
-				R = 0
-			}
+			R = (R + 1) % len(wall)
 		case '<':
-			R--
-			if R < 0 {
-				R = len(wall) - 1
-			}
+			R = (R - 1 + len(wall)) % len(wall)
 		}
 		switch input[len(input)-1-i] {
 		case '>':
-			R--
-			if R < 0 {
-				R = len(wall) - 1
-			}
+			R = (R - 1 + len(wall)) % len(wall)
 		case '<':
 			R++
 			if R == len(wall) {
