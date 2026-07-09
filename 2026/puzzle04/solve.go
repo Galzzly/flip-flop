@@ -19,7 +19,7 @@ func Part2(input string) any {
 	ans := 0
 	stalk := strings.Split(input, "\n")[3:]
 	stalk = stalk[:len(stalk)-1]
-	side := utils.Ter(strings.HasPrefix(stalk[len(stalk)-1], "o"), true, false)
+	side := strings.HasPrefix(stalk[len(stalk)-1], "o")
 	stalk = stalk[:len(stalk)-1]
 	length := len(stalk) - 1
 	for i := 0; i < len(stalk); i++ {
