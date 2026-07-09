@@ -19,19 +19,24 @@ func Part2(input string) any {
 	ans := 0
 	stalk := strings.Split(input, "\n")[3:]
 	stalk = stalk[:len(stalk)-1]
-	side := strings.HasPrefix(stalk[len(stalk)-1], "o")
-	stalk = stalk[:len(stalk)-1]
-	length := len(stalk) - 1
-	for i := 0; i < len(stalk); i++ {
+	i := len(stalk) - 1
+	for i >= 0 && !strings.Contains(stalk[i], "o") {
+		i--
+	}
+	if i < 0 {
+		return ans
+	}
+	side := strings.HasPrefix(stalk[i], "o")
+
+	for i--; i >= 0; i-- {
 		if side {
-			if strings.HasSuffix(stalk[length-i], "o") {
+			if strings.HasSuffix(stalk[i], "o") {
 				ans++
 				side = !side
-				continue
 			}
 			continue
 		}
-		if strings.HasPrefix(stalk[length-i], "o") {
+		if strings.HasPrefix(stalk[i], "o") {
 			ans++
 			side = !side
 		}
