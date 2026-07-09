@@ -34,8 +34,8 @@ go.work.sum
 # Puzzle inputs
 */puzzle*/input.txt
 */puzzle*/input_test.txt
-*/puzzle*/*/input.txt
-*/puzzle*/*/input_test.txt
+*/puzzle*/*/
+
 
 # Local auth config
 goff.config.json
