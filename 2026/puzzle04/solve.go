@@ -40,29 +40,24 @@ func Part2(input string) any {
 }
 
 func Part3(input string) any {
-	ans := 0
 	stalk := strings.Split(input, "\n")[3:]
 	stalk = stalk[:len(stalk)-1]
-	length := len(stalk) - 1
-	leaves := []bool{}
-	for i := 0; i < len(stalk); i++ {
-		if strings.Contains(stalk[length-i], "o") {
-			leaves = append(leaves, strings.HasPrefix(stalk[length-i], "o"))
+	endLeft, endRight := 0, 0
+	for _, line := range stalk {
+		if !strings.Contains(line, "o") {
+			continue
 		}
-	}
-	for len(leaves) > 0 {
-		ans++
-		cur := leaves[0]
-		leaves = leaves[1:]
-		for i := 0; i < len(leaves); i++ {
-			if leaves[i] == cur {
-				continue
+		if strings.HasPrefix(line, "o") {
+			if endRight > 0 {
+				endRight--
 			}
-			cur = leaves[i]
-			leaves = append(leaves[:i], leaves[i+1:]...)
-			i--
+			endLeft++
+		} else {
+			if endLeft > 0 {
+				endLeft--
+			}
+			endRight++
 		}
-
 	}
-	return ans
+	return endLeft + endRight
 }
